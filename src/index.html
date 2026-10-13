@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Filmes por mês</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #141414;
+        --panel: #1c1c1c;
+        --line: #2d2d2d;
+        --fg: #ececec;
+        --mut: #9b9b9b;
+        --acc: #6ac045;
+        --acc-d: #4e9a31;
+        --err: #ff6b6b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      /* topo */
+      .top {
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .top-in {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 12px 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      h1 b {
+        color: var(--acc);
+      }
+      form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: flex-end;
+      }
+      .grp {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .cap {
+        font-size: 11px;
+        color: var(--mut);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      select,
+      button {
+        font: inherit;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: #242424;
+        color: var(--fg);
+        padding: 8px 12px;
+      }
+      select:focus-visible,
+      button:focus-visible,
+      .card:focus-visible {
+        outline: 2px solid var(--acc);
+        outline-offset: 2px;
+      }
+      .go {
+        background: var(--acc);
+        border-color: var(--acc);
+        color: #0d1a08;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .go:hover {
+        background: #7ad456;
+      }
+      .go:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 20px 72px;
+      }
+      #status {
+        min-height: 26px;
+        margin-bottom: 16px;
+        color: var(--mut);
+      }
+      #status.err {
+        color: var(--err);
+        white-space: pre-wrap;
+      }
+
+      /* grade de pôsteres */
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 26px 20px;
+      }
+      .card {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+      }
+      .poster {
+        position: relative;
+        aspect-ratio: 2/3;
+        overflow: hidden;
+        background: #222;
+        border: 4px solid #ededed;
+        border-radius: 4px;
+        transition: border-color 0.15s;
+      }
+      .card:hover .poster,
+      .card:focus-visible .poster {
+        border-color: var(--acc);
+      }
+      .poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .poster.noimg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+        text-align: center;
+        background: linear-gradient(160deg, #2a2f2a, #181a18);
+        color: var(--mut);
+        font-weight: 600;
+      }
+
+      /* camada ao passar o mouse */
+      .ov {
+        position: absolute;
+        inset: 0;
+        padding: 14px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(14, 34, 8, 0.93);
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .card:hover .ov,
+      .card:focus-visible .ov {
+        opacity: 1;
+      }
+      .star {
+        color: var(--acc);
+        font-size: 34px;
+        line-height: 1;
+      }
+      .rate {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .gen {
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+      }
+      .chip {
+        font-size: 11px;
+        padding: 1px 6px;
+        border: 1px solid var(--acc);
+        color: var(--acc);
+        border-radius: 3px;
+      }
+      .det {
+        margin-top: 6px;
+        border: 2px solid var(--acc);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .card:hover .det {
+        background: var(--acc);
+        color: #0d1a08;
+      }
+
+      .title {
+        margin-top: 9px;
+        font-weight: 700;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sub {
+        color: var(--mut);
+        font-size: 13px;
+      }
+
+      #more {
+        display: none;
+        margin: 32px auto 0;
+        padding: 10px 28px;
+      }
+      #more.on {
+        display: block;
+      }
+      @media (max-width: 520px) {
+        #grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 20px 12px;
+        }
+        .top {
+          position: static;
+        }
+        .top-in {
+          padding: 10px 12px;
+        }
+        main {
+          padding: 16px 12px 64px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-in">
+        <h1>Filmes <b>por mês</b></h1>
+        <form id="f">
+          <div class="grp">
+            <span class="cap">Enviado ao YTS em</span>
+            <div class="row">
+              <select id="year" aria-label="Ano de upload"></select>
+              <select id="month" aria-label="Mês de upload"></select>
+            </div>
+          </div>
+          <div class="grp">
+            <span class="cap">Lançamento (opcional)</span>
+            <select id="release" aria-label="Ano de lançamento"></select>
+          </div>
+          <div class="grp">
+            <span class="cap">Qualidade</span>
+            <select id="quality" aria-label="Qualidade">
+              <option value="">Todas</option>
+              <option>480p</option>
+              <option>720p</option>
+              <option>1080p</option>
+              <option>1080p.x265</option>
+              <option>2160p</option>
+              <option>3D</option>
+            </select>
+          </div>
+          <button class="go" id="go" type="submit">Buscar</button>
+        </form>
+      </div>
+    </header>
+    <main>
+      <div id="status" role="status">Carregando…</div>
+      <div id="grid"></div>
+      <button id="more" type="button">Mostrar mais</button>
+    </main>
+    <script>
+      var $ = function (id) {
+        return document.getElementById(id);
+      };
+      var PAGE = 60;
+      var movies = [],
+        shown = 0;
+
+      var now = new Date();
+      var meses = [
+        "Ano inteiro",
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+      ];
+      for (var y = now.getFullYear(); y >= 2011; y--)
+        $("year").add(new Option(String(y), String(y)));
+      meses.forEach(function (n, i) {
+        $("month").add(new Option(n, i ? String(i) : ""));
+      });
+      $("month").value = String(now.getMonth() + 1);
+
+      // faixas iguais às do filtro "Year" do site; os dois primeiros anos acompanham o ano atual
+      var cy = now.getFullYear();
+      [
+        ["", "Todos"],
+        [String(cy), String(cy)],
+        [String(cy - 1), String(cy - 1)],
+        ["2020-now", "2020 – hoje"],
+        ["2010-now", "2010 – hoje"],
+        ["2010-2019", "2010 – 2019"],
+        ["2000-2009", "2000 – 2009"],
+        ["1990-1999", "1990 – 1999"],
+        ["1980-1989", "1980 – 1989"],
+        ["1970-1979", "1970 – 1979"],
+        ["1900-1969", "1900 – 1969"],
+      ].forEach(function (o) {
+        $("release").add(new Option(o[1], o[0]));
+      });
+
+      function safeUrl(u) {
+        try {
+          var x = new URL(u);
+          return x.protocol === "https:" || x.protocol === "http:"
+            ? x.href
+            : null;
+        } catch (e) {
+          return null;
+        }
+      }
+      function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text !== undefined) n.textContent = text;
+        return n;
+      }
+
+      function card(m) {
+        var a = el("a", "card");
+        var link = safeUrl(m.url);
+        if (link) {
+          a.href = link;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+        }
+        a.title = m.title + " (" + m.year + ")";
+
+        var poster = el("div", "poster");
+        var cover = safeUrl(
+          m.medium_cover_image || m.large_cover_image || m.small_cover_image,
+        );
+        function noImage() {
+          poster.className = "poster noimg";
+          poster.textContent = m.title;
+          poster.appendChild(overlay());
+        }
+        function overlay() {
+          var ov = el("div", "ov");
+          if (m.rating > 0) {
+            ov.appendChild(el("div", "star", "★"));
+            ov.appendChild(el("div", "rate", m.rating + " / 10"));
+          }
+          (m.genres || []).slice(0, 2).forEach(function (g) {
+            ov.appendChild(el("div", "gen", g));
+          });
+          var qs = (m.torrents || [])
+            .map(function (t) {
+              return t.quality;
+            })
+            .filter(function (v, i, arr) {
+              return v && arr.indexOf(v) === i;
+            });
+          if (qs.length) {
+            var chips = el("div", "chips");
+            qs.forEach(function (q) {
+              chips.appendChild(el("span", "chip", q));
+            });
+            ov.appendChild(chips);
+          }
+          ov.appendChild(el("div", "det", "Ver detalhes"));
+          return ov;
+        }
+        if (cover) {
+          var img = new Image();
+          img.alt = m.title;
+          img.loading = "lazy";
+          img.referrerPolicy = "no-referrer";
+          img.onerror = function () {
+            poster.textContent = "";
+            noImage();
+          };
+          img.src = cover;
+          poster.appendChild(img);
+          poster.appendChild(overlay());
+        } else {
+          noImage();
+        }
+        a.appendChild(poster);
+        a.appendChild(el("div", "title", m.title));
+        var up = m.date_uploaded_unix
+          ? " · upload " +
+            new Date(m.date_uploaded_unix * 1000).toLocaleDateString("pt-BR")
+          : "";
+        a.appendChild(el("div", "sub", m.year + up));
+        return a;
+      }
+
+      function showMore() {
+        var frag = document.createDocumentFragment();
+        movies.slice(shown, shown + PAGE).forEach(function (m) {
+          frag.appendChild(card(m));
+        });
+        $("grid").appendChild(frag);
+        shown = Math.min(shown + PAGE, movies.length);
+        $("more").className = shown < movies.length ? "on" : "";
+        $("more").textContent =
+          "Mostrar mais (" + (movies.length - shown) + " restantes)";
+      }
+      $("more").addEventListener("click", showMore);
+
+      function load() {
+        var q = new URLSearchParams({
+          year: $("year").value,
+          month: $("month").value,
+          quality: $("quality").value,
+        });
+        if ($("release").value) q.set("release", $("release").value);
+        var status = $("status"),
+          btn = $("go");
+        $("grid").textContent = "";
+        $("more").className = "";
+        movies = [];
+        shown = 0;
+        status.className = "";
+        btn.disabled = true;
+        var t0 = Date.now();
+        var timer = setInterval(function () {
+          status.textContent =
+            "Buscando na API do YTS… " +
+            Math.round((Date.now() - t0) / 1000) +
+            "s (a primeira consulta de cada mês é a mais lenta)";
+        }, 500);
+        status.textContent = "Buscando na API do YTS…";
+
+        fetch("/movies?" + q)
+          .then(function (r) {
+            return r.json().then(function (data) {
+              return { ok: r.ok, data: data };
+            });
+          })
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.data.error || "Erro desconhecido");
+            movies = res.data.movies;
+            var mv = $("month").value;
+            var periodo = mv
+              ? meses[Number(mv)].toLowerCase() + " de " + $("year").value
+              : "em " + $("year").value;
+            var rel = $("release").value
+              ? ", lançados em " +
+                $("release").options[$("release").selectedIndex].text
+              : "";
+            if (movies.length) {
+              status.textContent =
+                movies.length +
+                " filme(s) enviados ao YTS em " +
+                periodo +
+                rel +
+                (res.data.cached ? " (do cache)" : "") +
+                ".";
+            } else if (res.data.total_in_period > 0) {
+              status.textContent =
+                "Nenhum filme enviado em " +
+                periodo +
+                " foi lançado em " +
+                $("release").options[$("release").selectedIndex].text +
+                " (" +
+                res.data.total_in_period +
+                " filme(s) no período sem esse filtro).";
+            } else {
+              status.textContent = "Nenhum filme encontrado nesse período.";
+            }
+            showMore();
+          })
+          .catch(function (err) {
+            status.className = "err";
+            status.textContent = "Erro: " + err.message;
+          })
+          .then(function () {
+            clearInterval(timer);
+            btn.disabled = false;
+          });
+      }
+
+      $("f").addEventListener("submit", function (e) {
+        e.preventDefault();
+        load();
+      });
+      load();
+    </script>
+  </body>
+</html>
