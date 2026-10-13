@@ -1,7 +1,9 @@
-import http from "node:http";
+import http, { type Server } from "node:http";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createApp } from "../src/http/app.ts";
+import { defaultConfig } from "../src/config/app-config.ts";
 
 // ---- mock da API do YTS ------------------------------------------------------
 const NOW = Date.UTC(2026, 9, 12, 12) / 1000;
@@ -48,12 +50,16 @@ const mock = http.createServer((req, res) => {
 await new Promise<void>((r) => mock.listen(9101, r));
 
 // ---- sobe o proxy apontando para o mock -----------------------------------------
-process.env.YTS_API = "http://localhost:9101/api/v2/list_movies.json";
-process.env.PORT = "9102";
-process.env.PAGE_DELAY_MS = "0";
-process.env.CACHE_DIR = mkdtempSync(join(tmpdir(), "yts-cache-"));
-await import("../src/server.ts");
-await new Promise((r) => setTimeout(r, 300));
+const TEST_PORT = 9102;
+const app = createApp({
+  ...defaultConfig,
+  ytsApiBaseUrl: "http://localhost:9101/api/v2/list_movies.json",
+  cacheDir: mkdtempSync(join(tmpdir(), "yts-cache-")),
+  pageDelayMs: 0,
+});
+const server = await new Promise<Server>((resolve) => {
+  const s = app.listen(TEST_PORT, () => resolve(s));
+});
 
 // ---- asserts -------------------------------------------------------------------
 const expected = (y: number, m: number | null) => {
@@ -64,7 +70,7 @@ const expected = (y: number, m: number | null) => {
   ).length;
 };
 const get = async (q: string) => {
-  const r = await fetch(`http://localhost:9102/movies?${q}`);
+  const r = await fetch(`http://localhost:${TEST_PORT}/movies?${q}`);
   return { status: r.status, body: (await r.json()) as any };
 };
 
@@ -74,7 +80,7 @@ const check = (name: string, ok: boolean, extra = "") => {
   if (!ok) failed++;
 };
 
-const home = await fetch("http://localhost:9102/");
+const home = await fetch(`http://localhost:${TEST_PORT}/`);
 const homeHtml = await home.text();
 check(
   "página inicial /",
@@ -168,6 +174,7 @@ check(
 );
 check("sem year", (await get("month=3")).status === 400);
 
+server.close();
 mock.close();
 console.log(failed ? `\n${failed} falha(s)` : "\nTudo certo");
 process.exit(failed ? 1 : 0);
