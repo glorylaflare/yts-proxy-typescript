@@ -1,5 +1,4 @@
 <img src="assets\images\image.webp" width="200" alt="Logo do YTS">
-<br></br>
 
 # yts-proxy
 
