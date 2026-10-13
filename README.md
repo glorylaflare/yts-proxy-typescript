@@ -2,7 +2,7 @@
 
 # yts-proxy
 
-Proxy e painel web para consultar o catálogo da API pública do [YTS](https://yts.mx/), permitindo filtrar filmes por **mês/ano de upload**, **ano (ou faixa de anos) de lançamento** e **qualidade**, com cache em disco para evitar varreduras repetidas no upstream.
+Proxy e painel web para consultar o catálogo da API pública do [YTS](https://yts.gg/api), permitindo filtrar filmes por **mês/ano de upload**, **ano (ou faixa de anos) de lançamento** e **qualidade**, com cache em disco para evitar varreduras repetidas no upstream.
 
 ## Sumário
 
